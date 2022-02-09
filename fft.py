@@ -1,5 +1,7 @@
 import time
 import random
+import pandas as pd
+
 from math import sin,cos,pi
 
 
@@ -62,79 +64,65 @@ def idft(a):
 
 
 def main():
-    n = 10
+    n = 1000
     t = 10
     norm_time = {}
     fft_time = {}
-    while n > 1:
+    while n > 10:
         a, b = generator(n)
-        print("Polynomial 1: "+str(a))
-        print("Polynomial 2: "+str(b))
+        padding = 0
 
-
+        print("N: "+str(n))
         start_time1 = time.time()
         ans1 = naive(a, b, n)
         end_time1 = time.time()     
-        print("Naive polynomial multiplication result: "+str(ans1));
+        # print("Naive polynomial multiplication result: "+str(ans1));
         n_time = round(end_time1 - start_time1, 6);
-        print("Time elapsed: %f seconds" %n_time)
-        if norm_time.has_key(n):
-            norm_time[n] = norm_time[n] + n_time
+        # print("Naive time elapsed: %f seconds" %n_time)
+        if n in norm_time:
+            norm_time[n] = norm_time[n] + n_time/n
         else:
-            norm_time[n] = n_time
+            norm_time[n] = n_time/n
 
+        for i in range (0,13):
+            if n == pow(2,i):
+                padding = n
+                break;
+            elif n < pow(2,i):
+                padding = pow(2,i+1) - n
+                break;
 
-        ans_dft = [0]*(n*2)
-        for i in range(n):
+        ans_dft = [0]*(n+padding)
+        for i in range(padding):
             a.append(0)
             b.append(0)
         start_time2 = time.time()
         a_dft = dft(a)
         b_dft = dft(b)
-        for i in range(n*2):
+        for i in range(n+padding):
             ans_dft[i] = a_dft[i] * b_dft[i]
         ans2 =  idft(ans_dft)    
-        ans2 = [(x//(n*2)).real for x in ans2] 
+        ans2 = [round((x/(n+padding)).real) for x in ans2] 
         end_time2 = time.time()     
-        print("Naive polynomial multiplication result: "+str(ans2));
+        # print("FFT polynomial multiplication result: "+str(ans2));
         f_time = round(end_time2 - start_time2, 6);
-        print("Time elapsed: %f seconds" %f_time)
-        if fft_time.has_key(n):
-            fft_time[n] = fft_time[n] + f_time
+        # print("FFT time elapsed: %f seconds" %f_time)
+        if n in fft_time:
+            fft_time[n] = fft_time[n] + f_time/n
         else:
-            fft_time[n] = f_time   
+            fft_time[n] = f_time/n   
 
         t-=1
         if t == 0:
             n-=1
             t=10
 
-
-def test():
-    a = [1, 3, 5, 11]
-    b = [2, 4, 6 ,9]
-    n = len(a);    
-    ans_dft = [0]*(n*2)
-
-    ans1 = naive(a, b, n)  
-    print("Naive polynomial multiplication result: "+str(ans1));
-
-    for i in range(n):
-        a.append(0)
-        b.append(0)
-
-    print("Polynomial 1: "+str(a))
-    print("Polynomial 2: "+str(b))
-    a_dft = dft(a)
-    b_dft = dft(b)
-    print("A DFT: "+str(a_dft))
-    print("B DFT: "+str(b_dft))  
-    for i in range(n*2):
-        ans_dft[i] = a_dft[i] * b_dft[i]
-    print("Ans DFT: "+str(ans_dft))
-    ans2 =  idft(ans_dft)    
-    ans2 = [(x//(n*2)).real for x in ans2] 
-    print("Ans DFT: "+str(ans2))
+    df_1 = pd.DataFrame(norm_time.items()) 
+    df_2 = pd.DataFrame(fft_time.items()) 
+    writer = pd.ExcelWriter('output.xlsx')
+    df_1.to_excel(writer, 'NormTime')
+    df_2.to_excel(writer, 'FFTTime')
+    writer.save()
 
 if __name__ == "__main__":
     main()
